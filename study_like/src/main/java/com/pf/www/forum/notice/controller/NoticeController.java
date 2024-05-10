@@ -31,12 +31,25 @@ public class NoticeController {
 		if (!params.containsKey("size")) {
 			params.put("size", "10");
 		}
+
+		
+		String title = params.get("title");
+		String description = params.get("trumbowyg-demo");
+		
+		System.out.println("description======================>"+description);
+		System.out.println("title======================>"+title);
 		
 		System.out.println("params.page=====================>"+params.get("page"));
 		
 		int start = (Integer.parseInt(params.get("page"))) * Integer.parseInt(params.get("size"));
 		params.put("start", String.valueOf(start));
 		
+		//임시 하드코딩
+		String boardTypeSeq = "1";
+		params.put("boardTypeSeq", boardTypeSeq);
+		String regMemberSeq = "45";
+		params.put("regMemberSeq", regMemberSeq);
+		//여기까지
 		System.out.println("String.valueOf(start)========*****>>>"+String.valueOf(start));
 		
 		List<BoardDto> resultList = service.getList(params);
@@ -67,11 +80,35 @@ public class NoticeController {
 		mv.addObject("endPage",endPage);
 		mv.addObject("paging", params);
 		
-		System.out.println("params=====================>"+params);
+		System.out.println("params===========++++++++==========>"+params);
 		System.out.println("endPage============***=========>"+endPage);
 		System.out.println("totalPage============***=========>"+totalPage);
 		System.out.println("service.getList(params)=====================>"+ resultList);
 		
+		
+		try {
+			if(description != null && title != null && boardTypeSeq != null &&
+					!(description.isEmpty() && title.isEmpty() && boardTypeSeq.isEmpty())) {
+				System.out.println("게시글 작성 진입");
+				service.getInsert(params);
+				return new ModelAndView("redirect:/forum/notice/listPage.do");
+			}
+		} catch (NullPointerException e) {
+			System.out.println("게시글 작성 에러");
+		}
+		
+		String updateTitle = params.get("updateTitle");
+		String updateBoardSeq = params.get("updateBoardSeq");
+		
+		try {
+			if(updateTitle != null && updateBoardSeq!= null && !(updateBoardSeq.isEmpty() && updateTitle.isEmpty())) {
+				System.out.println("게시글 수정 진입");
+				service.updateBoard(params);
+				return new ModelAndView("redirect:/forum/notice/listPage.do");
+			}
+		} catch (NullPointerException e) {
+			System.out.println("게시글 수정 에러");
+		}
 		return mv;
 	}
 	
@@ -84,8 +121,23 @@ public class NoticeController {
 		return mv;
 	}
 	
+	
+	@RequestMapping("/forum/notice/updatePage.do")
+	public ModelAndView updatePage(@RequestParam HashMap<String, String> params) {
+		ModelAndView mv = new ModelAndView();
+		mv.addObject("key", Calendar.getInstance().getTimeInMillis());
+		mv.setViewName("forum/notice/update");
+		
+		BoardDto board =  service.getBoard(params.get("boardSeq"));
+		
+		mv.addObject("board",board);
+		
+		return mv;
+	}
+	
 	@RequestMapping("/forum/notice/readPage.do")
-	public ModelAndView readPage(@RequestParam HashMap<String, String> params) {
+	public ModelAndView readPage(@RequestParam HashMap<String, String> params,
+			@RequestParam int boardSeq) {
 		ModelAndView mv = new ModelAndView();
 		mv.addObject("key", Calendar.getInstance().getTimeInMillis());
 		mv.setViewName("forum/notice/read");
@@ -96,6 +148,15 @@ public class NoticeController {
 		}
 		
 		mv.addObject("board",service.getBoard(params.get("boardSeq")));
+		
+		// 비로그인된 상태, 보드타입 없는 상태에서 좋아요&싫어요 여부 확인할 수 있도록 임시로 하드코딩
+		int ghest = -1;
+		int boardTypeSeq = 1;
+		// 여기까지 임시 하드코딩
+		
+		mv.addObject("ynLike",service.getExistLike(boardSeq, boardTypeSeq, ghest));
+		mv.addObject("ynDisLike",service.getExistDisLike(boardSeq, boardTypeSeq, ghest));
+		
 		return mv;
 	}
 
